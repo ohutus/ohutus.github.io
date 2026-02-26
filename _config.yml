@@ -1,0 +1,17 @@
+title: ohutus.github.io
+plugins:
+  - jekyll-feed
+  - jekyll-remote-theme
+remote_theme: jekyll/minima
+
+minima:
+  skin: auto
+  social_links:
+    - title: github
+      icon: github
+      url: "https://github.com/ohutus"
+
+url: https://ohutus.github.io
+
+author:
+  name: ohutus(valeNimi4, rohelibian)
