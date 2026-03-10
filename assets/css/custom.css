@@ -1,1 +1,1 @@
-a {color: orange;}
+a, a.link, a.visited {color: orange !important;}
