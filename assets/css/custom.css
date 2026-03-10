@@ -1,2 +1,3 @@
-a, a.link, a.visited {color: blue;}
-@media (prefers-color-scheme: dark) { a, a.link, a.visited {color: lightblue;}}
+a, a.link, a.visited {color: blue !important }
+@media (prefers-color-scheme: dark) { a, a.link, a.visited {color: lightblue !important}}
+.dt-published {display: none;}
