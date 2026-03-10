@@ -1,1 +1,2 @@
-a, a.link, a.visited {color: blue !important;}
+a, a.link, a.visited {color: blue;}
+@media (prefers-color-scheme: dark) { a, a.link, a.visited {color: lightblue;}}
