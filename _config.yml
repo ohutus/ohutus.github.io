@@ -1,4 +1,7 @@
 title: ohutus.github.io
+
+theme: null
+
 plugins:
   - jekyll-feed
 
