@@ -3,7 +3,7 @@ layout: post
 title: "Liiklusõnnetuse simulaator"
 ---
 
-[Ava mäng](/liiklusohutus/mang3.html)
+[Ava mäng](/mang3.html)
 
 - A ja D = pööramine
 - W = gaas
