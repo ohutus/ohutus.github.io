@@ -3,8 +3,6 @@ layout: post
 title: "Liiklusohutuse kontrollnimekiri"
 ---
 
-# Liiklusohutuse kontrollnimekiri
-
 ## Autojuht
 
 ### Enne sõitu
