@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="et">
+<head>
+<meta charset="UTF-8">
+<title>LIIKLUSÕNNETUSE SIMULAATOR | liiklusohutus </title>
+<style>
+body{margin:0;overflow:hidden;background:#000}
+canvas{display:block;background:#111}
+#info{position:absolute;top:10px;left:10px;color:white;font-family:Arial}
+#ui{position:absolute;bottom:10px;left:10px;color:white;font-family:Arial}
+
+</style>
+</head>
+<body>
+
+<div id="info"></div>
+<div id="ui">
+<button onclick="spawnAI()">LISA AUTO</button>
+<button onclick="resetGame()">RESET</button>
+<button onclick="highlight=!highlight">KUS OLEN</button>
+<button onclick="fullView=!fullView">VAADE</button>
+<a href="/liiklusohutus"><button>LIIKLUSOHUTUS</button></a>
+</div>
+<canvas id="c"></canvas>
+
+<script>
+const canvas=document.getElementById("c");
+const ctx=canvas.getContext("2d");
+
+function resize(){
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener("resize", resize);
+
+const WORLD_W=3000;
+const WORLD_H=3000;
+
+let keys={};
+document.addEventListener("keyup",e=>keys[e.key.toLowerCase()]=false);
+
+let cars=[];
+let particles=[];
+let player;
+let shake=0;
+
+let history=[];
+let replay=false;
+let replayFrame=0;
+
+let fullView=false;
+let highlight=false;
+
+class Particle{
+    constructor(x,y){
+        this.x=x;
+        this.y=y;
+        this.vx=(Math.random()-0.5)*2000;
+        this.vy=(Math.random()-0.5)*2000;
+        this.life=1;
+    }
+    update(dt){
+        this.x+=this.vx*dt;
+        this.y+=this.vy*dt;
+        this.vx*=0.9;
+        this.vy*=0.9;
+        this.life-=dt;
+    }
+    draw(camX,camY,zoom){
+        ctx.globalAlpha=this.life;
+        ctx.fillStyle="orange";
+        ctx.fillRect((this.x-camX)*zoom,(this.y-camY)*zoom,4*zoom,4*zoom);
+        ctx.globalAlpha=1;
+    }
+}
+
+class Car{
+    constructor(x,y,a,isPlayer=false){
+        this.x=x;
+        this.y=y;
+        this.angle=a;
+        this.vx=0;
+        this.vy=0;
+
+        this.baseW=30;
+        this.baseH=14;
+        this.damage=0;
+
+        this.radius=18;
+        this.mass=1200;
+        this.health=100;
+        this.isPlayer=isPlayer;
+
+        this.color=isPlayer?"#00ffcc":
+        "hsl("+Math.random()*360+",70%,50%)";
+    }
+
+    speed(){return Math.hypot(this.vx,this.vy);}
+
+    update(dt){
+        let accel=0,turn=0;
+
+        if(this.isPlayer){
+    	if(keys["w"]) accel=1000;
+    	if(keys["s"]) accel=-500;
+            if(keys["a"]) turn=-13;
+            if(keys["d"]) turn=13;
+        }else{
+            accel=1200;
+            let target=Math.atan2(player.y-this.y,player.x-this.x);
+            let diff=target-this.angle;
+            diff=Math.atan2(Math.sin(diff),Math.cos(diff));
+            turn=diff*3;
+        }
+
+        this.angle+=turn*dt;
+
+        this.vx+=Math.cos(this.angle)*accel*dt;
+        this.vy+=Math.sin(this.angle)*accel*dt;
+
+	const drag = 0.25;
+	this.vx -= this.vx * drag * dt;
+	this.vy -= this.vy * drag * dt;
+
+        const max=10000;
+        let sp=this.speed();
+        if(sp>max){
+            this.vx*=max/sp;
+            this.vy*=max/sp;
+        }
+
+        this.x+=this.vx*dt;
+        this.y+=this.vy*dt;
+
+        const m=50;
+        if(this.x<m){this.x=m;this.vx=Math.abs(this.vx)*0.6;}
+        if(this.x>WORLD_W-m){this.x=WORLD_W-m;this.vx=-Math.abs(this.vx)*0.6;}
+        if(this.y<m){this.y=m;this.vy=Math.abs(this.vy)*0.6;}
+        if(this.y>WORLD_H-m){this.y=WORLD_H-m;this.vy=-Math.abs(this.vy)*0.6;}
+    }
+
+    draw(camX,camY,zoom){
+        let w=this.baseW*(1-this.damage*0.5)*zoom;
+        let h=this.baseH*(1+this.damage*0.4)*zoom;
+
+        ctx.save();
+        ctx.translate((this.x-camX)*zoom,(this.y-camY)*zoom);
+        ctx.rotate(this.angle);
+        ctx.fillStyle=this.color;
+        ctx.fillRect(-w/2,-h/2,w,h);
+        ctx.restore();
+
+        if(highlight && this.isPlayer){
+            ctx.beginPath();
+            ctx.arc((this.x-camX)*zoom,(this.y-camY)*zoom,50*zoom,0,Math.PI*2);
+            ctx.strokeStyle="white";
+            ctx.lineWidth=3;
+            ctx.stroke();
+        }
+    }
+}
+
+function resolve(a,b){
+    let dx=b.x-a.x;
+    let dy=b.y-a.y;
+    let dist=Math.hypot(dx,dy);
+    if(dist===0) return;
+
+    let overlap=a.radius+b.radius-dist;
+    if(overlap>0){
+        let nx=dx/dist;
+        let ny=dy/dist;
+
+        let push=overlap/2;
+        a.x-=nx*push;
+        a.y-=ny*push;
+        b.x+=nx*push;
+        b.y+=ny*push;
+
+        let rvx=b.vx-a.vx;
+        let rvy=b.vy-a.vy;
+        let vel=rvx*nx+rvy*ny;
+        if(vel>0) return;
+
+        let e=0.8;
+        let j=-(1+e)*vel/(1/a.mass+1/b.mass);
+
+        a.vx-=j*nx/a.mass;
+        a.vy-=j*ny/a.mass;
+        b.vx+=j*nx/b.mass;
+        b.vy+=j*ny/b.mass;
+
+        let impact=Math.abs(vel);
+
+        a.damage=Math.min(a.damage+impact*0.0004,1);
+        b.damage=Math.min(b.damage+impact*0.0004,1);
+
+        shake=Math.min(impact*3,40);
+
+        for(let i=0;i<impact*1.5;i++){
+            particles.push(new Particle((a.x+b.x)/2,(a.y+b.y)/2));
+        }
+    }
+}
+
+function init(){
+    cars=[];
+    particles=[];
+    history=[];
+    player=new Car(1500,1500,0,true);
+    cars.push(player);
+}
+init();
+
+function toggleReplay(){
+    replay=!replay;
+    replayFrame=0;
+}
+
+function update(dt){
+
+    if(!replay){
+        let frame=cars.map(c=>({
+            x:c.x,y:c.y,angle:c.angle,
+            vx:c.vx,vy:c.vy,
+            damage:c.damage
+        }));
+        history.push(frame);
+        if(history.length>800) history.shift();
+    }
+
+    if(replay){
+        if(history[replayFrame]){
+            let frame=history[replayFrame];
+            for(let i=0;i<cars.length;i++){
+                cars[i].x=frame[i].x;
+                cars[i].y=frame[i].y;
+                cars[i].angle=frame[i].angle;
+                cars[i].vx=frame[i].vx;
+                cars[i].vy=frame[i].vy;
+                cars[i].damage=frame[i].damage;
+            }
+            replayFrame++;
+        }else{
+            replay=false;
+        }
+        return;
+    }
+
+    cars.forEach(c=>c.update(dt));
+
+    for(let i=0;i<cars.length;i++){
+        for(let j=i+1;j<cars.length;j++){
+            resolve(cars[i],cars[j]);
+        }
+    }
+
+    particles.forEach(p=>p.update(dt));
+    particles=particles.filter(p=>p.life>0);
+
+    shake*=0.9;
+}
+
+function draw(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+
+    let zoom=fullView?
+        Math.min(canvas.width/WORLD_W,canvas.height/WORLD_H)
+        :1;
+
+    let camX=fullView?0:player.x-canvas.width/2;
+    let camY=fullView?0:player.y-canvas.height/2;
+
+    ctx.save();
+    ctx.translate((Math.random()-0.5)*shake,
+                  (Math.random()-0.5)*shake);
+
+    ctx.fillStyle="#222";
+    ctx.fillRect(-camX*zoom,-camY*zoom,WORLD_W*zoom,WORLD_H*zoom);
+
+    cars.forEach(c=>c.draw(camX,camY,zoom));
+    particles.forEach(p=>p.draw(camX,camY,zoom));
+
+    ctx.restore();
+
+    document.getElementById("info").innerText=
+    "Autod:"+cars.length+
+    " | Kiirus:"+(player.speed()*3.6).toFixed(0)+" km/h"+
+    (replay?" | REPLAY":"");
+}
+
+function loop(){
+    update(0.016);
+    draw();
+    requestAnimationFrame(loop);
+}
+function spawnAI(){
+    cars.push(new Car(
+        Math.random()*WORLD_W,
+        Math.random()*WORLD_H,
+        Math.random()*Math.PI*2,
+        false
+    ));
+}
+
+function resetGame(){
+    replay=false;
+    replayFrame=0;
+    init();
+}
+document.addEventListener("keydown",e=>{
+    keys[e.key.toLowerCase()]=true;
+
+    if(e.key==="r") toggleReplay();
+    if(e.key==="m") fullView=!fullView;
+    if(e.key==="h") highlight=!highlight;
+    if(e.key==="n") spawnAI();   // 🔥 N lisab AI
+});
+loop();
+</script>
+</body>
+</html>
