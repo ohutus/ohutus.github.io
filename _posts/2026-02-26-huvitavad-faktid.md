@@ -3,9 +3,9 @@ layout: post
 title: "Huvitavad faktid"
 ---
 
-<b id="fakt">Pikendusjuhtmed ei ole mõeldud püsivaks kasutamiseks, Paljud kasutavad neid aastaid järjest, kuid need on mõeldud ajutiseks lahenduseks. Ülekoormatud või üksteise otsa ühendatud pikendusjuhtmed on sage tulekahju põhjus</b>
+<h1 id="fakt">Pikendusjuhtmed ei ole mõeldud püsivaks kasutamiseks, Paljud kasutavad neid aastaid järjest, kuid need on mõeldud ajutiseks lahenduseks. Ülekoormatud või üksteise otsa ühendatud pikendusjuhtmed on sage tulekahju põhjus</h1>
 
-<button id="teinefakt" style="padding: 10px;">Veel</button>
+<button id="teinefakt" style="padding: 10px; color: black; background-color: lightgreen; font-size: 25px;">Veel</button>
 
 <script>const faktid = ["Enamik raskeid õnnetusi juhtub tuttaval teel", "Turvavöö vähendab surma riski eest kokkupõrkes ligi 45–50%", "Turvapadi avaneb umbes 20–40 millisekundiga.", "Ilma turvavööta võib turvapadi hoopis vigastusi suurendada.", "Pimedas helkurita jalakäiat on lähituledega märgatav umbes 30 meetri pealt. Helkuriga võib nähtavus ulatuda 150 meetrini või rohkem", "Telefon roolis pikendab reaktsiooniaega rohkem kui kerge joove", "Kiiruse väike tõus = suur riskitõus. Kui kiirus kasvab 50 km/h pealt 60 km/h-ni, suureneb jalakäija surma risk mitmekordselt, kui kokkupõrge toimub.",
   "Pikendusjuhtmed ei ole mõeldud püsivaks kasutamiseks, Paljud kasutavad neid aastaid järjest, kuid need on mõeldud ajutiseks lahenduseks. Ülekoormatud või üksteise otsa ühendatud pikendusjuhtmed on sage tulekahju põhjus.",
