@@ -16,5 +16,3 @@ title: "Huvitavad faktid"
   ];
   document.querySelector("#teinefakt").addEventListener("click", () => {document.querySelector("#fakt").innerHTML = faktid[Math.floor(Math.random() * faktid.length)]})
 </script>
-
-Faktid nii koduohutuse kui ka liiklusohutuse kohta
